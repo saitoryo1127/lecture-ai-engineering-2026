@@ -32,7 +32,7 @@ def search_glossary(query: str) -> str:
     """講座の用語集から用語を検索し、定義と、どの回で扱うかを返す。
 
     AIエンジニアリングの用語や、この講座（AIE2026）に固有の言葉について
-    答える前に使うこと。query には調べたい用語を1つだけ入れる（例: "LoRA"）。
+    答える前に使うこと。query には調べたい用語を一つずつ入れる（例: "LoRA"）。
     """
     q = _normalize(query)
     if not q:
@@ -77,3 +77,38 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+import json
+import random
+
+# ※すでに定義・インポートされている想定の関数
+# from app.xxx import load_glossary 
+
+
+def make_quiz(lecture: int) -> str:
+    """指定した回の用語から1つを選び、確認問題と答えを返す。
+
+    「第2回の確認問題を出して」のように、復習用の問題を求められたときに使う。
+    """
+    # 1. load_glossary() から lecture が一致する用語を集める
+    glossary_list = load_glossary()
+    target_items = [
+        item for item in glossary_list if item.get("lecture") == lecture
+    ]
+
+    if not target_items:
+        return json.dumps(
+            {"error": f"第{lecture}回の用語が見つかりませんでした。"},
+            ensure_ascii=False,
+        )
+
+    # 2. 1つ選ぶ (random.choice)
+    selected_item = random.choice(target_items)
+
+    # 3. 問題と答えを文字列で返す (json.dumps など)
+    result = {
+        "question": f"「{selected_item['term']}」の意味は？",
+        "answer": selected_item["definition"],
+    }
+
+    return json.dumps(result, ensure_ascii=False)
